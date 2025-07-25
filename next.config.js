@@ -2,6 +2,7 @@
 const nextConfig = {
   experimental: {
     appDir: true,
+    optimizePackageImports: ['lucide-react'],
   },
   images: {
     domains: ['www.soundjay.com', 'file-examples.com'],
@@ -18,6 +19,8 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
+  // Font optimization
+  optimizeFonts: true,
   // Headers for security and caching
   async headers() {
     return [

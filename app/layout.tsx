@@ -3,9 +3,15 @@ import { Inter } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Toaster } from '@/components/ui/toaster'
 import { Analytics } from '@vercel/analytics/react'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+  variable: '--font-inter',
+})
 
 export const metadata: Metadata = {
   title: 'Himig - AI Music Generation Platform',
@@ -36,11 +42,52 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" className="dark">
         <body className={`${inter.className} bg-background text-foreground antialiased`}>
-          <div className="min-h-screen bg-background">
-            {children}
-          </div>
+          <ErrorBoundary>
+            <div className="min-h-screen bg-background">
+              {children}
+            </div>
+          </ErrorBoundary>
           <Toaster />
           <Analytics />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                // Setup global error handler
+                (function() {
+                  const suppressedPatterns = [
+                    'Extension context invalidated',
+                    'polyfill.js',
+                    'knock.app',
+                    'chrome-extension://',
+                    'moz-extension://',
+                    'safari-extension://'
+                  ];
+
+                  window.addEventListener('error', function(e) {
+                    const shouldSuppress = suppressedPatterns.some(pattern =>
+                      e.message.toLowerCase().includes(pattern.toLowerCase()) ||
+                      (e.filename && e.filename.includes(pattern))
+                    );
+                    if (shouldSuppress) {
+                      e.preventDefault();
+                      return false;
+                    }
+                  });
+
+                  window.addEventListener('unhandledrejection', function(e) {
+                    const message = e.reason?.toString() || '';
+                    const shouldSuppress = suppressedPatterns.some(pattern =>
+                      message.toLowerCase().includes(pattern.toLowerCase())
+                    );
+                    if (shouldSuppress) {
+                      e.preventDefault();
+                      return false;
+                    }
+                  });
+                })();
+              `,
+            }}
+          />
         </body>
       </html>
     </ClerkProvider>

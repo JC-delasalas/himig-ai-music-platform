@@ -101,11 +101,11 @@ export const useAppStore = create<AppState>()(
 
         // Tracks actions
         setTracks: (tracks) => set({ tracks }),
-        addTrack: (track) => set((state) => ({ 
-          tracks: [track, ...state.tracks] 
+        addTrack: (track) => set((state) => ({
+          tracks: [track, ...state.tracks]
         })),
         updateTrack: (trackId, updates) => set((state) => ({
-          tracks: state.tracks.map(track => 
+          tracks: state.tracks.map(track =>
             track.id === trackId ? { ...track, ...updates } : track
           )
         })),
