@@ -1,8 +1,6 @@
-import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
 import { Music } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import MusicGenerator from '@/components/MusicGenerator'
 
 export default function GeneratePage() {
@@ -17,39 +15,16 @@ export default function GeneratePage() {
           </Link>
           
           <div className="flex items-center gap-4">
-            <SignedIn>
-              <Link href="/dashboard">
-                <Button variant="outline">Dashboard</Button>
-              </Link>
-            </SignedIn>
+            <Link href="/">
+              <Button variant="outline">Home</Button>
+            </Link>
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
-        <SignedOut>
-          <Card className="w-full max-w-2xl mx-auto">
-            <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-2">
-                <Music className="h-6 w-6" />
-                Sign In Required
-              </CardTitle>
-              <CardDescription>
-                Please sign in to generate music and save your creations
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="text-center">
-              <SignInButton mode="modal">
-                <Button size="lg">Sign In to Continue</Button>
-              </SignInButton>
-            </CardContent>
-          </Card>
-        </SignedOut>
-
-        <SignedIn>
-          <MusicGenerator />
-        </SignedIn>
+        <MusicGenerator />
       </div>
     </div>
   )

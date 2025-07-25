@@ -1,4 +1,3 @@
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs'
 import { Music } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -15,17 +14,9 @@ export default function HomePage() {
           </Link>
           
           <div className="flex items-center gap-4">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <Button variant="outline">Sign In</Button>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
-              <Link href="/dashboard">
-                <Button variant="outline">Dashboard</Button>
-              </Link>
-              <UserButton afterSignOutUrl="/" />
-            </SignedIn>
+            <Link href="/generate">
+              <Button variant="outline">Generate Music</Button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -42,20 +33,11 @@ export default function HomePage() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <SignedOut>
-              <SignInButton mode="modal">
-                <Button size="lg" className="text-lg px-8 py-6">
-                  Get Started Free
-                </Button>
-              </SignInButton>
-            </SignedOut>
-            <SignedIn>
-              <Link href="/generate">
-                <Button size="lg" className="text-lg px-8 py-6">
-                  Generate Music
-                </Button>
-              </Link>
-            </SignedIn>
+            <Link href="/generate">
+              <Button size="lg" className="text-lg px-8 py-6">
+                Generate Music
+              </Button>
+            </Link>
             <Link href="/generate">
               <Button variant="outline" size="lg" className="text-lg px-8 py-6">
                 Try Demo

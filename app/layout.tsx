@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { ClerkProvider } from '@clerk/nextjs'
 import { Toaster } from '@/components/ui/toaster'
 import { Analytics } from '@vercel/analytics/react'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -39,57 +38,55 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en" className="dark">
-        <body className={`${inter.className} bg-background text-foreground antialiased`}>
-          <ErrorBoundary>
-            <div className="min-h-screen bg-background">
-              {children}
-            </div>
-          </ErrorBoundary>
-          <Toaster />
-          <Analytics />
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                // Setup global error handler
-                (function() {
-                  const suppressedPatterns = [
-                    'Extension context invalidated',
-                    'polyfill.js',
-                    'knock.app',
-                    'chrome-extension://',
-                    'moz-extension://',
-                    'safari-extension://'
-                  ];
+    <html lang="en" className="dark">
+      <body className={`${inter.className} bg-background text-foreground antialiased`}>
+        <ErrorBoundary>
+          <div className="min-h-screen bg-background">
+            {children}
+          </div>
+        </ErrorBoundary>
+        <Toaster />
+        <Analytics />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Setup global error handler
+              (function() {
+                const suppressedPatterns = [
+                  'Extension context invalidated',
+                  'polyfill.js',
+                  'knock.app',
+                  'chrome-extension://',
+                  'moz-extension://',
+                  'safari-extension://'
+                ];
 
-                  window.addEventListener('error', function(e) {
-                    const shouldSuppress = suppressedPatterns.some(pattern =>
-                      e.message.toLowerCase().includes(pattern.toLowerCase()) ||
-                      (e.filename && e.filename.includes(pattern))
-                    );
-                    if (shouldSuppress) {
-                      e.preventDefault();
-                      return false;
-                    }
-                  });
+                window.addEventListener('error', function(e) {
+                  const shouldSuppress = suppressedPatterns.some(pattern =>
+                    e.message.toLowerCase().includes(pattern.toLowerCase()) ||
+                    (e.filename && e.filename.includes(pattern))
+                  );
+                  if (shouldSuppress) {
+                    e.preventDefault();
+                    return false;
+                  }
+                });
 
-                  window.addEventListener('unhandledrejection', function(e) {
-                    const message = e.reason?.toString() || '';
-                    const shouldSuppress = suppressedPatterns.some(pattern =>
-                      message.toLowerCase().includes(pattern.toLowerCase())
-                    );
-                    if (shouldSuppress) {
-                      e.preventDefault();
-                      return false;
-                    }
-                  });
-                })();
-              `,
-            }}
-          />
-        </body>
-      </html>
-    </ClerkProvider>
+                window.addEventListener('unhandledrejection', function(e) {
+                  const message = e.reason?.toString() || '';
+                  const shouldSuppress = suppressedPatterns.some(pattern =>
+                    message.toLowerCase().includes(pattern.toLowerCase())
+                  );
+                  if (shouldSuppress) {
+                    e.preventDefault();
+                    return false;
+                  }
+                });
+              })();
+            `,
+          }}
+        />
+      </body>
+    </html>
   )
 }
