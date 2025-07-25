@@ -9,8 +9,7 @@ export async function GET(request: NextRequest) {
       message: 'This API endpoint is not implemented in this application',
       available_endpoints: [
         '/api/generate',
-        '/api/tracks',
-        '/api/webhooks/clerk'
+        '/api/tracks'
       ]
     },
     { status: 404 }

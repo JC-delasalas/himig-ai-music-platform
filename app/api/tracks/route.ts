@@ -1,21 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs'
-import { getUserTracks } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get user authentication
-    const { userId } = auth()
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Get user's tracks from database
-    const tracks = await getUserTracks(userId)
+    // For demo purposes, return empty tracks array
+    // In production, you would fetch from database with proper authentication
+    const tracks: any[] = []
 
     return NextResponse.json({
       success: true,

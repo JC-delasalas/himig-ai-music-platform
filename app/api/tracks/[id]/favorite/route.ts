@@ -1,27 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs'
-import { updateTrackFavorite } from '@/lib/supabase'
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Get user authentication
-    const { userId } = auth()
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
+    // For demo purposes, return success without updating database
+    // In production, you would update database with proper authentication
     const { isFavorite } = await request.json()
     const trackId = params.id
 
-    // Update track favorite status
-    const updatedTrack = await updateTrackFavorite(trackId, isFavorite)
+    // Mock updated track
+    const updatedTrack = {
+      id: trackId,
+      is_favorite: isFavorite,
+      updated_at: new Date().toISOString(),
+    }
 
     return NextResponse.json({
       success: true,

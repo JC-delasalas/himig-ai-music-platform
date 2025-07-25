@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs'
-import { supabase, saveGeneratedTrack } from '@/lib/supabase'
 import { generateTrackTitle } from '@/lib/utils'
-import { musicGenerationLimiter, createRateLimitResponse } from '@/lib/rate-limit'
 
 export interface GenerationRequest {
   prompt: string
@@ -21,21 +18,8 @@ const SAMPLE_AUDIO_URLS = [
 
 export async function POST(request: NextRequest) {
   try {
-    // Apply rate limiting
-    const rateLimitResult = await musicGenerationLimiter(request)
-    if (!rateLimitResult.success) {
-      return createRateLimitResponse(rateLimitResult)
-    }
-
-    // Get user authentication
-    const { userId } = auth()
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    // For demo purposes, we'll skip authentication and rate limiting
+    // In production, you would implement proper authentication here
 
     // Parse request body
     const body: GenerationRequest = await request.json()
@@ -90,21 +74,25 @@ export async function POST(request: NextRequest) {
       play_count: 0,
     }
 
-    // Save to database
-    const savedTrack = await saveGeneratedTrack(trackData)
+    // For demo purposes, return track data without saving to database
+    // In production, you would save to database here
+    const track = {
+      id: `demo-${Date.now()}`,
+      title: trackData.title,
+      prompt: trackData.prompt,
+      genre: trackData.genre,
+      mood: trackData.mood,
+      duration: trackData.duration,
+      audio_url: trackData.audio_url,
+      is_favorite: trackData.is_favorite,
+      play_count: trackData.play_count,
+      created_at: new Date().toISOString(),
+    }
 
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
-      track: savedTrack
+      track
     })
-
-    // Add rate limit headers to successful response
-    const { headers } = createRateLimitResponse(rateLimitResult)
-    headers.forEach((value, key) => {
-      response.headers.set(key, value)
-    })
-
-    return response
 
   } catch (error) {
     console.error('Generation error:', error)
