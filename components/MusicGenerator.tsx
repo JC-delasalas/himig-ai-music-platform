@@ -1,14 +1,21 @@
 'use client'
 
 import React, { useRef, useEffect } from 'react'
-import { Play, Pause, Download, Volume2, Loader2, Music, AlertCircle, Heart } from 'lucide-react'
+import { Play, Pause, Download, Volume2, Loader2, Music, AlertCircle, Heart, Settings, Share2 } from 'lucide-react'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { Select } from './ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
+import { Progress } from './ui/progress'
+import { Slider } from './ui/slider'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
+import { useToast } from '@/hooks/use-toast'
 import { useAppStore, useFormData, useGenerationState, useAudioState } from '@/lib/store'
 import { validatePrompt, formatTime } from '@/lib/utils'
+import { trackMusicGeneration, trackUserInteraction, trackError } from '@/lib/analytics'
 import { cn } from '@/lib/utils'
+import AudioWaveform from './AudioWaveform'
+import ShareDialog from './ShareDialog'
 
 const GENRES = [
   'Pop', 'Rock', 'Jazz', 'Classical', 'Electronic', 'Hip Hop', 
@@ -24,7 +31,8 @@ const MusicGenerator: React.FC = () => {
   const formData = useFormData()
   const { state: generationState, progress, error } = useGenerationState()
   const audioState = useAudioState()
-  
+  const { toast } = useToast()
+
   const {
     updateFormData,
     setGenerationState,
@@ -63,17 +71,26 @@ const MusicGenerator: React.FC = () => {
       setGenerationError(validation.error || 'Invalid prompt')
       return
     }
-    
+
     if (!formData.genre || !formData.mood) {
       setGenerationError('Please select both genre and mood')
       return
     }
 
+    // Track generation start
+    const startTime = Date.now()
+    trackMusicGeneration('start', {
+      prompt: formData.prompt,
+      genre: formData.genre,
+      mood: formData.mood,
+      duration: formData.duration
+    })
+
     setGenerationState('generating')
     setGenerationError('')
     setCurrentTrack(null)
     resetAudioState()
-    
+
     const progressInterval = simulateProgress()
 
     try {
@@ -100,9 +117,49 @@ const MusicGenerator: React.FC = () => {
       setCurrentTrack(track)
       addTrack(track)
       setGenerationState('success')
+
+      // Track successful generation
+      const generationTime = Date.now() - startTime
+      trackMusicGeneration('complete', {
+        track_id: track.id,
+        generation_time: generationTime,
+        prompt: formData.prompt,
+        genre: formData.genre,
+        mood: formData.mood,
+        duration: formData.duration
+      })
+
+      // Show success toast
+      toast({
+        title: "Music Generated Successfully!",
+        description: `"${track.title}" is ready to play`,
+        variant: "success",
+      })
     } catch (err) {
-      setGenerationError(err instanceof Error ? err.message : 'An error occurred during generation')
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred during generation'
+      setGenerationError(errorMessage)
       setGenerationState('error')
+
+      // Track generation error
+      trackMusicGeneration('error', {
+        error: errorMessage,
+        prompt: formData.prompt,
+        genre: formData.genre,
+        mood: formData.mood,
+        duration: formData.duration
+      })
+
+      // Track error for monitoring
+      if (err instanceof Error) {
+        trackError(err, { context: 'music_generation' })
+      }
+
+      // Show error toast
+      toast({
+        title: "Generation Failed",
+        description: errorMessage,
+        variant: "destructive",
+      })
     } finally {
       clearInterval(progressInterval)
       setGenerationProgress(0)
@@ -111,12 +168,17 @@ const MusicGenerator: React.FC = () => {
 
   // Audio player functions
   const togglePlayPause = () => {
-    if (!audioRef.current) return
-    
+    if (!audioRef.current || !currentTrack) return
+
     if (audioState.isPlaying) {
       audioRef.current.pause()
     } else {
       audioRef.current.play()
+      // Track play event
+      trackUserInteraction('play', 'audio_player', {
+        track_id: currentTrack.id,
+        track_title: currentTrack.title
+      })
     }
     setAudioState({ isPlaying: !audioState.isPlaying })
   }
@@ -137,7 +199,13 @@ const MusicGenerator: React.FC = () => {
 
   const handleDownload = () => {
     if (!currentTrack) return
-    
+
+    // Track download event
+    trackUserInteraction('download', 'audio_player', {
+      track_id: currentTrack.id,
+      track_title: currentTrack.title
+    })
+
     const link = document.createElement('a')
     link.href = currentTrack.audio_url
     link.download = `${currentTrack.title}.mp3`
@@ -148,7 +216,7 @@ const MusicGenerator: React.FC = () => {
 
   const handleFavorite = async () => {
     if (!currentTrack) return
-    
+
     try {
       const response = await fetch(`/api/tracks/${currentTrack.id}/favorite`, {
         method: 'PATCH',
@@ -163,9 +231,48 @@ const MusicGenerator: React.FC = () => {
       if (response.ok) {
         const updatedTrack = { ...currentTrack, is_favorite: !currentTrack.is_favorite }
         setCurrentTrack(updatedTrack)
+
+        // Show toast notification
+        toast({
+          title: updatedTrack.is_favorite ? "Added to Favorites" : "Removed from Favorites",
+          description: `"${updatedTrack.title}" ${updatedTrack.is_favorite ? 'added to' : 'removed from'} your favorites`,
+        })
       }
     } catch (error) {
       console.error('Failed to update favorite:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update favorite status",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleShare = async () => {
+    if (!currentTrack) return
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: currentTrack.title,
+          text: `Check out this AI-generated music: "${currentTrack.title}"`,
+          url: window.location.href,
+        })
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(window.location.href)
+        toast({
+          title: "Link Copied",
+          description: "Track link copied to clipboard",
+        })
+      }
+    } catch (error) {
+      console.error('Failed to share:', error)
+      toast({
+        title: "Share Failed",
+        description: "Unable to share track",
+        variant: "destructive",
+      })
     }
   }
 
@@ -259,14 +366,13 @@ const MusicGenerator: React.FC = () => {
           <label className="block text-sm font-medium mb-2">
             Duration: {formData.duration} seconds
           </label>
-          <input
-            type="range"
-            min="15"
-            max="120"
-            step="5"
-            value={formData.duration}
-            onChange={(e) => handleInputChange('duration', parseInt(e.target.value))}
-            className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+          <Slider
+            value={[formData.duration]}
+            onValueChange={(value) => handleInputChange('duration', value[0])}
+            max={120}
+            min={15}
+            step={5}
+            className="w-full"
           />
           <div className="flex justify-between text-xs text-muted-foreground mt-1">
             <span>15s</span>
@@ -281,6 +387,16 @@ const MusicGenerator: React.FC = () => {
           </div>
         )}
 
+        {generationState === 'generating' && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span>Generating your music...</span>
+              <span>{progress}%</span>
+            </div>
+            <Progress value={progress} className="w-full" />
+          </div>
+        )}
+
         <Button
           onClick={handleGenerate}
           disabled={generationState === 'generating'}
@@ -290,7 +406,7 @@ const MusicGenerator: React.FC = () => {
           {generationState === 'generating' ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating... {progress}%
+              Generating...
             </>
           ) : (
             'Generate Music'
@@ -313,20 +429,31 @@ const MusicGenerator: React.FC = () => {
                 {currentTrack.genre} • {currentTrack.mood} • Generated {new Date(currentTrack.created_at).toLocaleTimeString()}
               </CardDescription>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleFavorite}
-              className={cn(
-                "shrink-0",
-                currentTrack.is_favorite && "text-red-500"
-              )}
-            >
-              <Heart className={cn(
-                "h-5 w-5",
-                currentTrack.is_favorite && "fill-current"
-              )} />
-            </Button>
+            <div className="flex items-center gap-2">
+              <ShareDialog track={currentTrack}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0"
+                >
+                  <Share2 className="h-5 w-5" />
+                </Button>
+              </ShareDialog>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleFavorite}
+                className={cn(
+                  "shrink-0",
+                  currentTrack.is_favorite && "text-red-500"
+                )}
+              >
+                <Heart className={cn(
+                  "h-5 w-5",
+                  currentTrack.is_favorite && "fill-current"
+                )} />
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -336,34 +463,24 @@ const MusicGenerator: React.FC = () => {
             src={currentTrack.audio_url}
           />
 
-          {/* Waveform visualization placeholder */}
-          <div className="h-20 bg-secondary/20 rounded-lg flex items-center justify-center border-2 border-dashed border-secondary">
-            <div className="flex items-center gap-1">
-              {Array.from({ length: 40 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "w-1 bg-primary/60 rounded-full transition-all duration-150",
-                    audioState.isPlaying ? "animate-pulse" : ""
-                  )}
-                  style={{
-                    height: `${Math.random() * 60 + 10}px`,
-                    animationDelay: `${i * 50}ms`
-                  }}
-                />
-              ))}
-            </div>
-          </div>
+          {/* Advanced Waveform visualization */}
+          <AudioWaveform
+            audioUrl={currentTrack.audio_url}
+            isPlaying={audioState.isPlaying}
+            currentTime={audioState.currentTime}
+            duration={audioState.duration}
+            className="border border-border"
+          />
 
           {/* Progress bar */}
           <div className="space-y-2">
-            <input
-              type="range"
-              min="0"
+            <Slider
+              value={[audioState.currentTime]}
+              onValueChange={(value) => handleSeek({ target: { value: value[0].toString() } } as any)}
               max={audioState.duration || 0}
-              value={audioState.currentTime}
-              onChange={handleSeek}
-              className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+              min={0}
+              step={0.1}
+              className="w-full"
             />
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>{formatTime(audioState.currentTime)}</span>
@@ -388,14 +505,13 @@ const MusicGenerator: React.FC = () => {
 
               <div className="flex items-center gap-2">
                 <Volume2 className="h-4 w-4" />
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={audioState.volume}
-                  onChange={handleVolumeChange}
-                  className="w-20 h-2 bg-secondary rounded-lg appearance-none cursor-pointer"
+                <Slider
+                  value={[audioState.volume]}
+                  onValueChange={(value) => handleVolumeChange({ target: { value: value[0].toString() } } as any)}
+                  max={1}
+                  min={0}
+                  step={0.1}
+                  className="w-20"
                 />
               </div>
             </div>

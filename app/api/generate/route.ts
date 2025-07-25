@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs'
 import { supabase, saveGeneratedTrack } from '@/lib/supabase'
 import { generateTrackTitle } from '@/lib/utils'
+import { musicGenerationLimiter, createRateLimitResponse } from '@/lib/rate-limit'
 
 export interface GenerationRequest {
   prompt: string
@@ -20,9 +21,15 @@ const SAMPLE_AUDIO_URLS = [
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting
+    const rateLimitResult = await musicGenerationLimiter(request)
+    if (!rateLimitResult.success) {
+      return createRateLimitResponse(rateLimitResult)
+    }
+
     // Get user authentication
     const { userId } = auth()
-    
+
     if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -86,10 +93,18 @@ export async function POST(request: NextRequest) {
     // Save to database
     const savedTrack = await saveGeneratedTrack(trackData)
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       track: savedTrack
     })
+
+    // Add rate limit headers to successful response
+    const { headers } = createRateLimitResponse(rateLimitResult)
+    headers.forEach((value, key) => {
+      response.headers.set(key, value)
+    })
+
+    return response
 
   } catch (error) {
     console.error('Generation error:', error)
