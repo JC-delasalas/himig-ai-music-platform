@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Himig - AI-Powered Music Generation Platform
 
 A professional-grade Next.js application for generating music from text prompts using AI, built to match the quality and functionality of platforms like Suno AI.
@@ -269,4 +270,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 📧 Email: support@himig.ai
 - 💬 Discord: [Join our community](https://discord.gg/himig)
 - 📖 Documentation: [docs.himig.ai](https://docs.himig.ai)
-- 🐛 Issues: [GitHub Issues](https://github.com/your-username/himig/issues)
+- 🐛 Issues: [GitHub Issues](https://github.com/JC-delasalas/himig-ai-music-platform/issues)

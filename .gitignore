@@ -27,10 +27,14 @@ yarn-error.log*
 
 # local env files
 .env*.local
+<<<<<<< HEAD
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+=======
+.env
+>>>>>>> cf4e150c2611916f1a60caa0aa5e2b46aa2ee5e7
 
 # vercel
 .vercel
@@ -38,6 +42,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+<<<<<<< HEAD
 
 # IDE files
 .vscode/
@@ -119,3 +124,5 @@ temp/
 *.njsproj
 *.sln
 *.sw?
+=======
+>>>>>>> cf4e150c2611916f1a60caa0aa5e2b46aa2ee5e7
