@@ -1,4 +1,5 @@
 {
+  "name": "himig-ai-music-platform",
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
