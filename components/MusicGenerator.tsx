@@ -53,14 +53,15 @@ const MusicGenerator: React.FC = () => {
 
   const simulateProgress = () => {
     setGenerationProgress(0)
+    let progress = 0
     const interval = setInterval(() => {
-      setGenerationProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          return 100
-        }
-        return prev + 2 // 5 seconds = 50 steps of 2%
-      })
+      progress += 2 // 5 seconds = 50 steps of 2%
+      if (progress >= 100) {
+        clearInterval(interval)
+        setGenerationProgress(100)
+      } else {
+        setGenerationProgress(progress)
+      }
     }, 100)
     return interval
   }

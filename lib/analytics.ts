@@ -64,7 +64,7 @@ export function trackError(error: Error, context?: Record<string, any>) {
   try {
     track('error_occurred', {
       error_message: error.message,
-      error_stack: error.stack,
+      error_stack: error.stack || 'No stack trace available',
       error_name: error.name,
       ...context
     })

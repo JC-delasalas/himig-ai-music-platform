@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     const audioUrl = SAMPLE_AUDIO_URLS[Math.floor(Math.random() * SAMPLE_AUDIO_URLS.length)]
     
     const trackData = {
-      user_id: userId,
+      user_id: 'demo-user',
       title,
       prompt,
       genre,
