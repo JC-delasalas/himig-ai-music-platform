@@ -75,9 +75,9 @@ export function shouldSuppressError(error: Error | string): boolean {
     'Script error',
   ]
 
-  return suppressPatterns.some(pattern => 
+  return suppressPatterns.some(pattern =>
     message.toLowerCase().includes(pattern.toLowerCase()) ||
-    stack.toLowerCase().includes(pattern.toLowerCase())
+    (stack && stack.toLowerCase().includes(pattern.toLowerCase()))
   )
 }
 
